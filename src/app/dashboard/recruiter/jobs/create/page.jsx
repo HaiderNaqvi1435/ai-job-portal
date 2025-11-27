@@ -21,12 +21,14 @@ import { USER_ROLES } from '@/types';
 import { Save, Send, Sparkles } from 'lucide-react';
 import { createJob } from '@/lib/api/firebase-helpers';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useJobStore } from '@/store/useJobStore';
 import { jobSchema } from '@/lib/schemas';
 import Link from 'next/link';
 
 function CreateJobContent() {
   const router = useRouter();
   const { profile } = useAuthStore();
+  const { addJob } = useJobStore();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -70,7 +72,10 @@ function CreateJobContent() {
       jobSchema.parse(jobData);
 
       // Create job in Firebase
-      await createJob(profile.uid, jobData);
+      const newJob = await createJob(profile.uid, jobData);
+
+      // IMMEDIATELY update Zustand store
+      addJob(newJob);
 
       // Redirect to jobs list
       router.push('/dashboard/recruiter/jobs');

@@ -19,11 +19,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useJobStore } from '@/store/useJobStore';
 import { getRecruiterJobs } from '@/lib/api/firebase-helpers';
 
 function RecruiterDashboardContent() {
   const { profile } = useAuthStore();
-  const [jobs, setJobs] = useState([]);
+  const { jobs, setJobs } = useJobStore();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     activeJobs: 0,
@@ -37,7 +38,10 @@ function RecruiterDashboardContent() {
       if (profile?.uid) {
         try {
           const recruiterJobs = await getRecruiterJobs(profile.uid);
-          setJobs(recruiterJobs.slice(0, 5)); // Show latest 5
+
+          // IMMEDIATELY update Zustand store
+          setJobs(recruiterJobs);
+
           setStats({
             activeJobs: recruiterJobs.filter(j => j.status === 'active').length,
             totalApplicants: 0, // Will be calculated from applications
@@ -53,7 +57,7 @@ function RecruiterDashboardContent() {
     };
 
     fetchData();
-  }, [profile]);
+  }, [profile, setJobs]);
 
   const quickActions = [
     {
@@ -208,7 +212,7 @@ function RecruiterDashboardContent() {
               </div>
             ) : jobs.length > 0 ? (
               <div className="space-y-4">
-                {jobs.map((job) => (
+                {jobs.slice(0, 5).map((job) => (
                   <div
                     key={job.id}
                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"

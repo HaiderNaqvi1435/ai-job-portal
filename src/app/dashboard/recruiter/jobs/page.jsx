@@ -18,11 +18,12 @@ import { USER_ROLES } from '@/types';
 import { Plus, Search, Eye, Users, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
-import { getRecruiterJobs, deleteJob } from '@/lib/api/firebase-helpers';
+import { useJobStore } from '@/store/useJobStore';
+import { getRecruiterJobs, deleteJob as deleteJobFromFirebase } from '@/lib/api/firebase-helpers';
 
 function JobManagementContent() {
   const { profile } = useAuthStore();
-  const [jobs, setJobs] = useState([]);
+  const { jobs, setJobs, deleteJob: deleteJobFromStore, setLoading: setStoreLoading } = useJobStore();
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,19 +33,23 @@ function JobManagementContent() {
     const fetchJobs = async () => {
       if (profile?.uid) {
         try {
+          setStoreLoading(true);
           const recruiterJobs = await getRecruiterJobs(profile.uid);
+
+          // IMMEDIATELY update Zustand store
           setJobs(recruiterJobs);
           setFilteredJobs(recruiterJobs);
         } catch (error) {
           console.error('Error fetching jobs:', error);
         } finally {
           setLoading(false);
+          setStoreLoading(false);
         }
       }
     };
 
     fetchJobs();
-  }, [profile]);
+  }, [profile, setJobs, setStoreLoading]);
 
   useEffect(() => {
     let filtered = jobs;
@@ -68,8 +73,11 @@ function JobManagementContent() {
     if (!confirm('Are you sure you want to delete this job posting?')) return;
 
     try {
-      await deleteJob(jobId);
-      setJobs(jobs.filter(job => job.id !== jobId));
+      // Delete from Firebase
+      await deleteJobFromFirebase(jobId);
+
+      // IMMEDIATELY update Zustand store
+      deleteJobFromStore(jobId);
     } catch (error) {
       console.error('Error deleting job:', error);
       alert('Failed to delete job');

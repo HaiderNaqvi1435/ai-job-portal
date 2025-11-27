@@ -59,13 +59,21 @@ export async function updateUserProfile(uid, updates) {
 // Job operations
 export async function createJob(recruiterId, jobData) {
   try {
-    const docRef = await addDoc(collection(db, 'jobs'), {
+    const timestamp = Timestamp.now();
+    const newJob = {
       ...jobData,
       recruiterId,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    });
-    return { id: docRef.id, ...jobData };
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    const docRef = await addDoc(collection(db, 'jobs'), newJob);
+
+    // Return the complete job object with ID
+    return {
+      id: docRef.id,
+      ...newJob,
+    };
   } catch (error) {
     console.error('Error creating job:', error);
     throw error;
