@@ -1,0 +1,314 @@
+{
+  "resumeAnalysis": {
+    "score": 82,
+    "strengths": [
+      "Strong technical skills demonstrated across multiple technologies",
+      "Clear career progression from Junior to Senior positions",
+      "Quantifiable achievements showing measurable impact",
+      "Well-structured education background with relevant degree",
+      "Active contribution to open-source projects demonstrates passion"
+    ],
+    "weaknesses": [
+      "Resume could benefit from a stronger professional summary",
+      "Some job responsibilities lack specific metrics",
+      "Missing leadership or team management experience",
+      "Could emphasize soft skills more prominently",
+      "No mention of certifications or professional development"
+    ],
+    "skills": [
+      "JavaScript",
+      "React",
+      "Node.js",
+      "TypeScript",
+      "Python",
+      "AWS",
+      "Docker",
+      "MongoDB",
+      "PostgreSQL",
+      "Git",
+      "CI/CD",
+      "Agile"
+    ],
+    "experience": {
+      "years": 5,
+      "level": "mid"
+    },
+    "suggestions": [
+      "Add a compelling professional summary at the top highlighting your unique value proposition",
+      "Include more quantifiable metrics for each role (e.g., 'increased performance by 40%')",
+      "Mention any leadership roles or mentoring experiences",
+      "Add relevant certifications like AWS Certified Developer or similar",
+      "Include soft skills such as communication, collaboration, and problem-solving",
+      "Consider adding a 'Projects' section showcasing your best work"
+    ],
+    "rewrittenSummary": "Results-driven Software Engineer with 5+ years of experience building scalable web applications using modern JavaScript frameworks. Proven track record of improving application performance by 40% and leading development of features that increased user engagement by 30%. Passionate about clean code, best practices, and continuous learning. Seeking to leverage expertise in React, Node.js, and cloud technologies to drive innovation in a dynamic team environment."
+  },
+  "atsOptimization": {
+    "atsScore": 78,
+    "matchedKeywords": [
+      "JavaScript",
+      "React",
+      "Node.js",
+      "TypeScript",
+      "AWS",
+      "Docker",
+      "Agile",
+      "Git",
+      "API Development",
+      "Web Applications",
+      "Team Collaboration",
+      "Problem Solving"
+    ],
+    "missingKeywords": [
+      "Microservices",
+      "Kubernetes",
+      "GraphQL",
+      "Redis",
+      "CI/CD Pipeline",
+      "Test-Driven Development",
+      "Scrum",
+      "REST API Design",
+      "Performance Optimization",
+      "Code Review"
+    ],
+    "recommendations": [
+      "Add 'Microservices Architecture' to your technical skills section",
+      "Mention experience with Kubernetes or container orchestration",
+      "Include GraphQL if you have experience with it",
+      "Highlight CI/CD pipeline implementation in your work experience",
+      "Add specific testing methodologies (TDD, BDD, Unit Testing)",
+      "Emphasize REST API design and best practices",
+      "Mention performance optimization achievements with metrics",
+      "Include code review and quality assurance processes"
+    ],
+    "optimizedResume": "PROFESSIONAL SUMMARY\n\nResults-driven Software Engineer with 5+ years of experience in full-stack development, specializing in JavaScript, React, Node.js, and cloud technologies. Expert in building scalable web applications using microservices architecture and modern DevOps practices. Proven track record of improving application performance by 40% through optimization techniques and implementing robust CI/CD pipelines.\n\nTECHNICAL SKILLS\n\nProgramming Languages: JavaScript, TypeScript, Python\nFrontend: React, Redux, HTML5, CSS3, Responsive Design\nBackend: Node.js, Express.js, GraphQL, REST API Design\nDatabases: MongoDB, PostgreSQL, Redis\nCloud & DevOps: AWS (EC2, S3, Lambda), Docker, Kubernetes, CI/CD Pipeline\nTesting: Jest, Test-Driven Development (TDD), Unit Testing\nTools & Methodologies: Git, Agile/Scrum, Code Review, Performance Optimization\n\nPROFESSIONAL EXPERIENCE\n\nSenior Software Engineer | TechCorp Inc. | 2020 - Present\n• Architected and implemented microservices-based applications serving 100k+ daily active users\n• Improved application performance by 40% through code optimization and efficient database queries\n• Established CI/CD pipeline reducing deployment time by 60%\n• Led code reviews and mentored 3 junior developers in best practices\n• Implemented GraphQL API improving data fetching efficiency by 35%\n\nSoftware Engineer | StartupXYZ | 2018 - 2020\n• Developed RESTful APIs using Node.js and Express.js for e-commerce platform\n• Built responsive React components following test-driven development practices\n• Collaborated with cross-functional teams in Agile/Scrum environment\n• Containerized applications using Docker and deployed on AWS\n• Reduced bug reports by 30% through comprehensive testing and code quality improvements",
+    "keywordDensity": {
+      "current": 12,
+      "recommended": 18
+    }
+  },
+  "skillGapAnalysis": {
+    "fitScore": 75,
+    "skillsFound": [
+      "JavaScript",
+      "React",
+      "Node.js",
+      "TypeScript",
+      "AWS",
+      "Docker",
+      "MongoDB",
+      "Git",
+      "Agile",
+      "REST API"
+    ],
+    "skillsMissing": [
+      "Kubernetes",
+      "GraphQL",
+      "Redis",
+      "Elasticsearch",
+      "Terraform",
+      "Jenkins"
+    ],
+    "weakSkills": [
+      "Microservices Architecture",
+      "System Design",
+      "Performance Optimization"
+    ],
+    "recommendedCourses": [
+      {
+        "skill": "Kubernetes",
+        "course": "Kubernetes for Developers",
+        "platform": "Udemy",
+        "estimatedTime": "12 hours"
+      },
+      {
+        "skill": "GraphQL",
+        "course": "GraphQL by Example",
+        "platform": "Coursera",
+        "estimatedTime": "8 hours"
+      },
+      {
+        "skill": "Microservices Architecture",
+        "course": "Microservices with Node.js and React",
+        "platform": "Udemy",
+        "estimatedTime": "40 hours"
+      },
+      {
+        "skill": "Redis",
+        "course": "Redis for Developers",
+        "platform": "Redis University",
+        "estimatedTime": "6 hours"
+      },
+      {
+        "skill": "System Design",
+        "course": "Grokking the System Design Interview",
+        "platform": "Educative",
+        "estimatedTime": "20 hours"
+      }
+    ],
+    "improvementTips": [
+      "Focus on learning Kubernetes as it's highly demanded in the current market",
+      "Build a personal project using GraphQL to gain practical experience",
+      "Study microservices design patterns and implement them in a side project",
+      "Take online courses on system design to strengthen architectural knowledge",
+      "Contribute to open-source projects that use the missing technologies",
+      "Attend webinars and conferences on cloud-native technologies",
+      "Set up a home lab to practice with Redis, Elasticsearch, and Terraform",
+      "Document your learning journey on a technical blog to reinforce knowledge"
+    ],
+    "marketDemand": {
+      "score": 8,
+      "trend": "increasing"
+    }
+  },
+  "jobGeneration": {
+    "title": "Senior Full Stack Developer",
+    "description": "We are seeking a talented Senior Full Stack Developer to join our growing engineering team. In this role, you will design and develop scalable web applications, mentor junior developers, and contribute to architectural decisions. You'll work with modern technologies including React, Node.js, and cloud platforms to build innovative solutions that impact millions of users.",
+    "responsibilities": [
+      "Design, develop, and maintain scalable web applications using React and Node.js",
+      "Architect and implement RESTful and GraphQL APIs",
+      "Collaborate with product managers and designers to define product requirements",
+      "Write clean, maintainable, and well-documented code",
+      "Conduct code reviews and provide constructive feedback to team members",
+      "Mentor junior developers and contribute to team knowledge sharing",
+      "Optimize application performance and ensure high code quality",
+      "Participate in agile ceremonies and sprint planning",
+      "Deploy and maintain applications on AWS cloud infrastructure",
+      "Stay updated with emerging technologies and industry best practices"
+    ],
+    "requirements": [
+      "5+ years of professional software development experience",
+      "Strong proficiency in JavaScript/TypeScript and modern frameworks (React, Node.js)",
+      "Experience with both SQL and NoSQL databases (PostgreSQL, MongoDB)",
+      "Solid understanding of RESTful API design and microservices architecture",
+      "Experience with cloud platforms (AWS, Azure, or GCP)",
+      "Proficiency with Git and version control workflows",
+      "Strong problem-solving and analytical skills",
+      "Excellent communication and collaboration abilities",
+      "Bachelor's degree in Computer Science or equivalent experience",
+      "Experience with CI/CD pipelines and DevOps practices"
+    ],
+    "skills": [
+      "React",
+      "Node.js",
+      "TypeScript",
+      "JavaScript",
+      "AWS",
+      "MongoDB",
+      "PostgreSQL",
+      "Docker",
+      "Kubernetes",
+      "GraphQL",
+      "REST API",
+      "Git",
+      "Agile/Scrum"
+    ],
+    "benefits": [
+      "Competitive salary with annual performance bonuses",
+      "Comprehensive health, dental, and vision insurance",
+      "401(k) retirement plan with company matching",
+      "Flexible work hours and remote work options",
+      "Professional development budget for courses and conferences",
+      "Stock options and equity participation",
+      "Generous paid time off and holidays",
+      "Modern office with free snacks and beverages",
+      "Team building events and company outings",
+      "Latest hardware and development tools"
+    ],
+    "salaryRange": {
+      "min": 120000,
+      "max": 160000,
+      "currency": "USD"
+    },
+    "qualifications": [
+      "Proven track record of delivering high-quality software products",
+      "Experience leading technical initiatives and projects",
+      "Strong understanding of software design patterns and principles",
+      "Ability to work independently and in team environments",
+      "Passion for learning new technologies and sharing knowledge",
+      "Experience with testing frameworks and test-driven development"
+    ]
+  },
+  "salaryInsights": {
+    "salaryRange": {
+      "min": 100000,
+      "max": 160000,
+      "median": 130000,
+      "currency": "USD"
+    },
+    "skillDemandScore": 8.5,
+    "marketTrend": "increasing",
+    "insights": [
+      "Software Engineers with React and Node.js skills are in high demand across all industries",
+      "Cloud experience (AWS, Azure, GCP) can increase salary by 15-20%",
+      "Full-stack developers earn 10-15% more than specialized frontend or backend developers",
+      "Companies in San Francisco and New York offer 20-30% higher salaries than national average",
+      "Remote positions are increasingly competitive with on-site salaries",
+      "Experience with microservices and DevOps practices commands premium compensation"
+    ],
+    "comparison": {
+      "entryLevel": 75000,
+      "midLevel": 110000,
+      "seniorLevel": 150000
+    },
+    "topPayingCompanies": [
+      "Google",
+      "Meta",
+      "Amazon",
+      "Microsoft",
+      "Netflix",
+      "Apple",
+      "Stripe",
+      "Airbnb"
+    ],
+    "recommendations": [
+      "Learn cloud technologies (AWS, Azure) to increase your market value",
+      "Gain experience with Kubernetes and container orchestration",
+      "Develop expertise in microservices architecture",
+      "Build a strong portfolio showcasing full-stack projects",
+      "Consider certifications like AWS Certified Developer",
+      "Network at tech meetups and conferences to discover opportunities",
+      "Stay updated with latest JavaScript frameworks and tools",
+      "Highlight quantifiable achievements in your resume"
+    ]
+  },
+  "candidateEvaluation": {
+    "overallScore": 85,
+    "matchScore": 82,
+    "experienceScore": 88,
+    "skillsScore": 80,
+    "strengths": [
+      "Strong technical background with 5+ years of relevant experience",
+      "Demonstrated expertise in required technologies (React, Node.js, TypeScript)",
+      "Proven track record of delivering measurable results (40% performance improvement)",
+      "Good understanding of modern development practices and tools",
+      "Shows initiative through open-source contributions",
+      "Clear communication skills evident from well-structured resume"
+    ],
+    "concerns": [
+      "Limited experience with Kubernetes mentioned in the job requirements",
+      "No explicit mention of GraphQL experience",
+      "Could strengthen system design and architecture skills",
+      "Leadership experience could be more prominently highlighted",
+      "Missing some nice-to-have skills like Redis and Elasticsearch"
+    ],
+    "recommendation": "strongly_recommend",
+    "summary": "This candidate is an excellent match for the Senior Full Stack Developer position. They possess strong technical skills in the core technologies (React, Node.js, TypeScript) and have a proven track record of delivering high-impact results. While there are minor skill gaps in some advanced technologies like Kubernetes and GraphQL, their strong foundation and demonstrated ability to learn suggest they would quickly acquire these skills. The candidate's 5 years of experience, combined with their achievement-oriented approach and modern development practices, make them a valuable addition to the team. Recommend proceeding to the technical interview stage.",
+    "interviewQuestions": [
+      "Can you describe a challenging performance optimization problem you solved and walk us through your approach?",
+      "Tell us about your experience with microservices architecture. What are the main challenges you've encountered?",
+      "How do you ensure code quality and maintainability in a fast-paced development environment?",
+      "Describe a situation where you had to make a critical architectural decision. What was your thought process?",
+      "What's your experience with CI/CD pipelines? Can you walk us through a deployment process you've implemented?",
+      "How do you stay updated with new technologies and decide which ones to adopt?",
+      "Tell us about a time you mentored a junior developer. What was your approach?",
+      "How would you design a scalable system to handle 1 million concurrent users?"
+    ],
+    "skillGaps": [
+      "Kubernetes and container orchestration",
+      "GraphQL API development",
+      "Advanced system design patterns",
+      "Redis caching strategies"
+    ]
+  }
+}

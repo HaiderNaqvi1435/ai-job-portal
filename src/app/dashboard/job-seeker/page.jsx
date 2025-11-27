@@ -13,6 +13,7 @@ import {
   Briefcase,
   DollarSign,
   Clock,
+  Video,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -74,28 +75,32 @@ function JobSeekerContent() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Applications</p>
-                  <p className="text-2xl font-bold">0</p>
+          <Link href="/dashboard/job-seeker/applications">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Applications</p>
+                    <p className="text-2xl font-bold">0</p>
+                  </div>
+                  <Briefcase className="h-8 w-8 text-blue-600" />
                 </div>
-                <Briefcase className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Interviews</p>
-                  <p className="text-2xl font-bold">0</p>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/dashboard/job-seeker/interviews">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Interviews</p>
+                    <p className="text-2xl font-bold">0</p>
+                  </div>
+                  <Video className="h-8 w-8 text-green-600" />
                 </div>
-                <Clock className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
