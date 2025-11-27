@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,12 +22,22 @@ import { useJobStore } from '@/store/useJobStore';
 import { JOB_STATUS } from '@/types';
 
 export default function JobsPage() {
+  const searchParams = useSearchParams();
   const { jobs, setJobs } = useJobStore();
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [locations, setLocations] = useState([]);
+
+  // Get search parameters from URL on mount
+  useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    const urlLocation = searchParams.get('location');
+
+    if (urlSearch) setSearchTerm(urlSearch);
+    if (urlLocation) setLocationFilter(urlLocation);
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchJobs = async () => {

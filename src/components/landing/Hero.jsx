@@ -1,11 +1,29 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Briefcase, Users, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Hero() {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [location, setLocation] = useState('');
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (searchTerm) params.set('search', searchTerm);
+    if (location) params.set('location', location);
+
+    // Navigate to jobs page with search parameters
+    router.push(`/jobs?${params.toString()}`);
+  };
+
   return (
     <section className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -20,7 +38,7 @@ export default function Hero() {
           </p>
 
           {/* Search Bar */}
-          <div className="max-w-3xl mx-auto mb-12">
+          <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -28,6 +46,8 @@ export default function Hero() {
                   type="text"
                   placeholder="Job title, skills, or keywords..."
                   className="pl-10 h-14 text-lg"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <div className="flex-1 relative">
@@ -35,13 +55,15 @@ export default function Hero() {
                   type="text"
                   placeholder="Location"
                   className="h-14 text-lg"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
                 />
               </div>
-              <Button size="lg" className="h-14 px-8">
+              <Button type="submit" size="lg" className="h-14 px-8">
                 Search Jobs
               </Button>
             </div>
-          </div>
+          </form>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">

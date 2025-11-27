@@ -12,11 +12,10 @@ import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardNav from '@/components/dashboard/DashboardNav';
 import { USER_ROLES } from '@/types';
-import { Send, FileText, AlertCircle } from 'lucide-react';
+import { Send, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import { getJobById, createApplication } from '@/lib/api/firebase-helpers';
 import { useAuthStore } from '@/store/useAuthStore';
-import { applicationSchema } from '@/lib/schemas';
-import { optimizeForATS } from '@/lib/api/openai';
+import { toast } from 'sonner';
 
 function ApplicationFormContent() {
   const params = useParams();
@@ -25,93 +24,118 @@ function ApplicationFormContent() {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState('');
-  const [atsScore, setAtsScore] = useState(null);
   const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
     coverLetter: '',
     resumeUrl: '',
     portfolioUrl: '',
     linkedinUrl: '',
-    additionalInfo: '',
+    experience: '',
   });
 
   useEffect(() => {
     const fetchJob = async () => {
       try {
         const jobData = await getJobById(params.id);
+
+        if (!jobData) {
+          setError('Job not found');
+          setLoading(false);
+          return;
+        }
+
         setJob(jobData);
 
-        // Pre-fill resume URL if available in profile
-        if (profile?.resumeUrl) {
-          setFormData(prev => ({ ...prev, resumeUrl: profile.resumeUrl }));
-        }
+        // Pre-fill user data from profile
+        setFormData(prev => ({
+          ...prev,
+          name: profile?.name || '',
+          email: profile?.email || user?.email || '',
+          phone: profile?.phone || '',
+          resumeUrl: profile?.resumeUrl || '',
+        }));
       } catch (error) {
         console.error('Error fetching job:', error);
+        setError('Failed to load job details');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchJob();
-  }, [params.id, profile]);
-
-  const handleAnalyzeATS = async () => {
-    if (!formData.resumeUrl || !job) {
-      setError('Please provide a resume URL first');
-      return;
+    if (user && params.id) {
+      fetchJob();
     }
+  }, [params.id, profile, user]);
 
-    setAnalyzing(true);
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
     setError('');
+  };
 
-    try {
-      // In a real app, you'd fetch the resume content from the URL
-      // For now, we'll show a simulated score
-      const resumeText = "Sample resume text"; // TODO: Fetch actual resume
-      const jobDescription = job.description;
-
-      const result = await optimizeForATS(resumeText, jobDescription);
-      setAtsScore(result.atsScore);
-    } catch (err) {
-      setError('Failed to analyze resume. Please try again.');
-      console.error(err);
-    } finally {
-      setAnalyzing(false);
+  const validateForm = () => {
+    if (!formData.name?.trim()) {
+      setError('Name is required');
+      return false;
     }
+    if (!formData.email?.trim()) {
+      setError('Email is required');
+      return false;
+    }
+    if (!formData.resumeUrl?.trim()) {
+      setError('Resume URL is required');
+      return false;
+    }
+
+    // Validate URL format
+    try {
+      new URL(formData.resumeUrl);
+    } catch {
+      setError('Please provide a valid resume URL');
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!validateForm()) {
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      // Validate form data
-      const applicationData = {
-        ...formData,
-        jobId: params.id,
-      };
-
-      applicationSchema.parse(applicationData);
-
       // Create application
       await createApplication({
-        ...applicationData,
+        jobId: params.id,
         userId: user.uid,
-        atsScore: atsScore || 0,
-        fitScore: 0, // Will be calculated by backend
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || '',
+        coverLetter: formData.coverLetter || '',
+        resumeUrl: formData.resumeUrl,
+        portfolioUrl: formData.portfolioUrl || '',
+        linkedinUrl: formData.linkedinUrl || '',
+        experience: formData.experience || '',
+        status: 'pending',
       });
 
+      toast.success('Application submitted successfully!');
+
       // Redirect to applications page
-      router.push('/dashboard/job-seeker/applications');
+      setTimeout(() => {
+        router.push('/dashboard/job-seeker/applications');
+      }, 1500);
     } catch (err) {
-      if (err.name === 'ZodError') {
-        setError(err.errors[0].message);
-      } else {
-        setError('Failed to submit application. Please try again.');
-      }
-      console.error(err);
+      console.error('Application error:', err);
+      setError('Failed to submit application. Please try again.');
+      toast.error('Failed to submit application');
     } finally {
       setSubmitting(false);
     }
@@ -124,7 +148,7 @@ function ApplicationFormContent() {
         <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
+            <p className="mt-4 text-gray-600">Loading job details...</p>
           </div>
         </div>
       </div>
@@ -136,11 +160,16 @@ function ApplicationFormContent() {
       <div>
         <DashboardNav />
         <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-2">Job Not Found</h2>
-            <p className="text-gray-600 mb-4">The job you're trying to apply for doesn't exist</p>
-            <Button onClick={() => router.push('/jobs')}>Browse Jobs</Button>
-          </div>
+          <Card className="max-w-md w-full">
+            <CardContent className="pt-6 text-center">
+              <AlertCircle className="h-16 w-16 mx-auto text-red-500 mb-4" />
+              <h2 className="text-2xl font-bold mb-2">Job Not Found</h2>
+              <p className="text-gray-600 mb-4">
+                {error || "The job you're trying to apply for doesn't exist"}
+              </p>
+              <Button onClick={() => router.push('/jobs')}>Browse Jobs</Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -155,7 +184,7 @@ function ApplicationFormContent() {
             Apply for {job.title}
           </h1>
           <p className="text-gray-600">
-            Complete the application form below
+            Complete the application form below to apply for this position
           </p>
         </div>
 
@@ -166,7 +195,7 @@ function ApplicationFormContent() {
               <CardHeader>
                 <CardTitle>Application Details</CardTitle>
                 <CardDescription>
-                  Fill in your information to apply for this position
+                  Fill in your information to submit your application
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -179,18 +208,64 @@ function ApplicationFormContent() {
                   )}
 
                   <div className="space-y-2">
+                    <Label htmlFor="name">Full Name *</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="John Doe"
+                      value={formData.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="john@example.com"
+                      value={formData.email}
+                      onChange={(e) => handleChange('email', e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+1 (555) 123-4567"
+                      value={formData.phone}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="resumeUrl">Resume URL *</Label>
                     <Input
                       id="resumeUrl"
                       type="url"
-                      placeholder="https://example.com/resume.pdf"
+                      placeholder="https://drive.google.com/file/..."
                       value={formData.resumeUrl}
-                      onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
+                      onChange={(e) => handleChange('resumeUrl', e.target.value)}
                       required
                     />
                     <p className="text-xs text-gray-500">
-                      Link to your resume (Google Drive, Dropbox, etc.)
+                      Link to your resume (Google Drive, Dropbox, personal website, etc.)
                     </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="experience">Years of Experience</Label>
+                    <Input
+                      id="experience"
+                      type="text"
+                      placeholder="e.g., 5 years"
+                      value={formData.experience}
+                      onChange={(e) => handleChange('experience', e.target.value)}
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -199,10 +274,12 @@ function ApplicationFormContent() {
                       id="coverLetter"
                       placeholder="Tell us why you're a great fit for this role..."
                       value={formData.coverLetter}
-                      onChange={(e) => setFormData({ ...formData, coverLetter: e.target.value })}
-                      rows={8}
+                      onChange={(e) => handleChange('coverLetter', e.target.value)}
+                      rows={6}
                     />
-                    <p className="text-xs text-gray-500">Optional, but recommended (min. 50 characters)</p>
+                    <p className="text-xs text-gray-500">
+                      Optional, but highly recommended
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -212,7 +289,7 @@ function ApplicationFormContent() {
                       type="url"
                       placeholder="https://yourportfolio.com"
                       value={formData.portfolioUrl}
-                      onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+                      onChange={(e) => handleChange('portfolioUrl', e.target.value)}
                     />
                   </div>
 
@@ -223,18 +300,7 @@ function ApplicationFormContent() {
                       type="url"
                       placeholder="https://linkedin.com/in/yourprofile"
                       value={formData.linkedinUrl}
-                      onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="additionalInfo">Additional Information</Label>
-                    <Textarea
-                      id="additionalInfo"
-                      placeholder="Any other information you'd like to share..."
-                      value={formData.additionalInfo}
-                      onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
-                      rows={4}
+                      onChange={(e) => handleChange('linkedinUrl', e.target.value)}
                     />
                   </div>
 
@@ -242,20 +308,27 @@ function ApplicationFormContent() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={handleAnalyzeATS}
-                      disabled={analyzing || !formData.resumeUrl}
+                      onClick={() => router.back()}
                       className="flex-1"
                     >
-                      <FileText className="h-4 w-4 mr-2" />
-                      {analyzing ? 'Analyzing...' : 'Check ATS Score'}
+                      Cancel
                     </Button>
                     <Button
                       type="submit"
                       disabled={submitting}
                       className="flex-1"
                     >
-                      <Send className="h-4 w-4 mr-2" />
-                      {submitting ? 'Submitting...' : 'Submit Application'}
+                      {submitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Submit Application
+                        </>
+                      )}
                     </Button>
                   </div>
                 </form>
@@ -263,7 +336,7 @@ function ApplicationFormContent() {
             </Card>
           </div>
 
-          {/* Job Summary & ATS Score */}
+          {/* Job Summary */}
           <div className="space-y-6">
             {/* Job Summary */}
             <Card>
@@ -276,12 +349,18 @@ function ApplicationFormContent() {
                   <p className="font-semibold">{job.title}</p>
                 </div>
                 <div>
+                  <p className="text-sm text-gray-500">Company</p>
+                  <p className="font-semibold">{job.companyName || 'Not specified'}</p>
+                </div>
+                <div>
                   <p className="text-sm text-gray-500">Location</p>
                   <p className="font-semibold">{job.location}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Type</p>
-                  <p className="font-semibold capitalize">{job.employmentType?.replace('-', ' ')}</p>
+                  <Badge variant="secondary" className="capitalize">
+                    {job.employmentType?.replace('-', ' ')}
+                  </Badge>
                 </div>
                 {job.salaryMin && job.salaryMax && (
                   <div>
@@ -294,56 +373,48 @@ function ApplicationFormContent() {
                 <div>
                   <p className="text-sm text-gray-500 mb-2">Required Skills</p>
                   <div className="flex flex-wrap gap-1">
-                    {job.skills?.slice(0, 5).map((skill, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
+                    {job.skills?.slice(0, 6).map((skill, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
                         {skill}
                       </Badge>
                     ))}
+                    {job.skills?.length > 6 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{job.skills.length - 6}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* ATS Score */}
-            {atsScore !== null && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>ATS Compatibility</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <div className={`text-5xl font-bold mb-2 ${atsScore >= 80 ? 'text-green-600' : atsScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                      {atsScore}
-                    </div>
-                    <p className="text-sm text-gray-600">out of 100</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
-                      <div
-                        className={`h-2 rounded-full ${atsScore >= 80 ? 'bg-green-600' : atsScore >= 60 ? 'bg-yellow-600' : 'bg-red-600'}`}
-                        style={{ width: `${atsScore}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-4">
-                      {atsScore >= 80 && 'Excellent match! Your resume is well-optimized.'}
-                      {atsScore >= 60 && atsScore < 80 && 'Good match, but could be improved.'}
-                      {atsScore < 60 && 'Consider optimizing your resume for better results.'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Tips */}
+            {/* Application Tips */}
             <Card>
               <CardHeader>
                 <CardTitle>Application Tips</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="text-sm space-y-2 text-gray-600">
-                  <li>✓ Tailor your cover letter to this specific role</li>
-                  <li>✓ Highlight relevant skills and experience</li>
-                  <li>✓ Proofread for spelling and grammar</li>
-                  <li>✓ Use our ATS checker to optimize your resume</li>
-                  <li>✓ Include quantifiable achievements</li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Tailor your application to this specific role</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Highlight relevant skills and experience</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Proofread for spelling and grammar errors</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Include quantifiable achievements</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>Make sure your resume URL is accessible</span>
+                  </li>
                 </ul>
               </CardContent>
             </Card>
