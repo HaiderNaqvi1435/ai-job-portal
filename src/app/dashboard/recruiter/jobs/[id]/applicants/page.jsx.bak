@@ -15,11 +15,10 @@ import {
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ScheduleInterviewDialog from '@/components/interview/ScheduleInterviewDialog';
-import { USER_ROLES, APPLICATION_STATUS } from '@/types';
+import { USER_ROLES } from '@/types';
 import { Calendar, Mail, Phone, FileText, Video, User } from 'lucide-react';
 import { getJobApplications, getJobById, updateApplication } from '@/lib/api/firebase-helpers';
 import { useApplicationStore } from '@/store/useApplicationStore';
-import { toast } from 'sonner';
 import Link from 'next/link';
 
 function ApplicantsContent() {
@@ -48,7 +47,6 @@ function ApplicantsContent() {
         setFilteredApplications(applicationsData);
       } catch (error) {
         console.error('Error fetching data:', error);
-        toast.error('Failed to load applications');
       } finally {
         setLoading(false);
       }
@@ -71,11 +69,9 @@ function ApplicantsContent() {
 
       // IMMEDIATELY update Zustand store
       updateApplicationInStore(applicationId, { status: newStatus });
-
-      toast.success('Application status updated successfully');
     } catch (error) {
       console.error('Error updating application status:', error);
-      toast.error('Failed to update application status');
+      alert('Failed to update status');
     }
   };
 
@@ -86,18 +82,14 @@ function ApplicantsContent() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case APPLICATION_STATUS.HIRED:
+      case 'accepted':
         return 'bg-green-100 text-green-800';
-      case APPLICATION_STATUS.REJECTED:
+      case 'rejected':
         return 'bg-red-100 text-red-800';
-      case APPLICATION_STATUS.PENDING:
+      case 'pending':
         return 'bg-yellow-100 text-yellow-800';
-      case APPLICATION_STATUS.REVIEWED:
+      case 'reviewed':
         return 'bg-blue-100 text-blue-800';
-      case APPLICATION_STATUS.SHORTLISTED:
-        return 'bg-purple-100 text-purple-800';
-      case APPLICATION_STATUS.INTERVIEW_SCHEDULED:
-        return 'bg-indigo-100 text-indigo-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -158,12 +150,10 @@ function ApplicantsContent() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value={APPLICATION_STATUS.PENDING}>Pending</SelectItem>
-                <SelectItem value={APPLICATION_STATUS.REVIEWED}>Reviewed</SelectItem>
-                <SelectItem value={APPLICATION_STATUS.SHORTLISTED}>Shortlisted</SelectItem>
-                <SelectItem value={APPLICATION_STATUS.INTERVIEW_SCHEDULED}>Interview Scheduled</SelectItem>
-                <SelectItem value={APPLICATION_STATUS.HIRED}>Hired</SelectItem>
-                <SelectItem value={APPLICATION_STATUS.REJECTED}>Rejected</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="reviewed">Reviewed</SelectItem>
+                <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -181,7 +171,7 @@ function ApplicantsContent() {
                     <div className="flex items-center gap-3 mb-2">
                       <CardTitle className="text-xl">{application.name}</CardTitle>
                       <Badge className={getStatusColor(application.status)}>
-                        {application.status?.replace('_', ' ')}
+                        {application.status}
                       </Badge>
                     </div>
                     <CardDescription>
@@ -244,7 +234,6 @@ function ApplicantsContent() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleScheduleInterview(application)}
-                    disabled={application.status === APPLICATION_STATUS.REJECTED}
                   >
                     <Video className="h-4 w-4 mr-2" />
                     Schedule Interview
@@ -254,16 +243,14 @@ function ApplicantsContent() {
                     value={application.status}
                     onValueChange={(value) => handleStatusChange(application.id, value)}
                   >
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-40">
                       <SelectValue placeholder="Change Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={APPLICATION_STATUS.PENDING}>Pending</SelectItem>
-                      <SelectItem value={APPLICATION_STATUS.REVIEWED}>Reviewed</SelectItem>
-                      <SelectItem value={APPLICATION_STATUS.SHORTLISTED}>Shortlisted</SelectItem>
-                      <SelectItem value={APPLICATION_STATUS.INTERVIEW_SCHEDULED}>Interview Scheduled</SelectItem>
-                      <SelectItem value={APPLICATION_STATUS.HIRED}>Hired</SelectItem>
-                      <SelectItem value={APPLICATION_STATUS.REJECTED}>Rejected</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="reviewed">Reviewed</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
