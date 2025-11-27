@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardNav from '@/components/dashboard/DashboardNav';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { USER_ROLES } from '@/types';
 import { Save, Send, Sparkles } from 'lucide-react';
 import { createJob } from '@/lib/api/firebase-helpers';
@@ -92,9 +92,8 @@ function CreateJobContent() {
   };
 
   return (
-    <div>
-      <DashboardNav />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="p-8">
+      <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -343,7 +342,9 @@ function CreateJobContent() {
 export default function CreateJobPage() {
   return (
     <ProtectedRoute allowedRoles={[USER_ROLES.RECRUITER]}>
-      <CreateJobContent />
+      <DashboardLayout>
+        <CreateJobContent />
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }

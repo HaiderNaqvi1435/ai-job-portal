@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardNav from '@/components/dashboard/DashboardNav';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { USER_ROLES } from '@/types';
 import { Plus, Search, Eye, Users, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -31,25 +31,30 @@ function JobManagementContent() {
 
   useEffect(() => {
     const fetchJobs = async () => {
-      if (profile?.uid) {
-        try {
-          setStoreLoading(true);
-          const recruiterJobs = await getRecruiterJobs(profile.uid);
+      if (!profile?.uid) {
+        setLoading(false);
+        return;
+      }
 
-          // IMMEDIATELY update Zustand store
-          setJobs(recruiterJobs);
-          setFilteredJobs(recruiterJobs);
-        } catch (error) {
-          console.error('Error fetching jobs:', error);
-        } finally {
-          setLoading(false);
-          setStoreLoading(false);
-        }
+      try {
+        setStoreLoading(true);
+        console.log('Fetching jobs for recruiter:', profile.uid);
+        const recruiterJobs = await getRecruiterJobs(profile.uid);
+        console.log('Fetched jobs:', recruiterJobs);
+
+        // IMMEDIATELY update Zustand store
+        setJobs(recruiterJobs);
+        setFilteredJobs(recruiterJobs);
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+      } finally {
+        setLoading(false);
+        setStoreLoading(false);
       }
     };
 
     fetchJobs();
-  }, [profile, setJobs, setStoreLoading]);
+  }, [profile?.uid, setJobs, setStoreLoading]);
 
   useEffect(() => {
     let filtered = jobs;
@@ -85,9 +90,7 @@ function JobManagementContent() {
   };
 
   return (
-    <div>
-      <DashboardNav />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="p-8">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -274,7 +277,6 @@ function JobManagementContent() {
             </CardContent>
           </Card>
         )}
-      </div>
     </div>
   );
 }
@@ -282,7 +284,9 @@ function JobManagementContent() {
 export default function JobManagementPage() {
   return (
     <ProtectedRoute allowedRoles={[USER_ROLES.RECRUITER]}>
-      <JobManagementContent />
+      <DashboardLayout>
+        <JobManagementContent />
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }

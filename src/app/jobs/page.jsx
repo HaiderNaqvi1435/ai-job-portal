@@ -5,26 +5,43 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import { Search, MapPin, Briefcase, DollarSign, Clock, Filter } from 'lucide-react';
 import Link from 'next/link';
 import { getJobs } from '@/lib/api/firebase-helpers';
+import { useJobStore } from '@/store/useJobStore';
 import { JOB_STATUS } from '@/types';
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState([]);
+  const { jobs, setJobs } = useJobStore();
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [locations, setLocations] = useState([]);
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
+        console.log('Fetching all active jobs...');
         const activeJobs = await getJobs({ status: JOB_STATUS.ACTIVE });
+        console.log('Fetched all active jobs:', activeJobs);
+
+        // IMMEDIATELY update Zustand store
         setJobs(activeJobs);
         setFilteredJobs(activeJobs);
+
+        // Extract unique locations
+        const uniqueLocations = [...new Set(activeJobs.map(job => job.location))].filter(Boolean);
+        setLocations(uniqueLocations);
       } catch (error) {
         console.error('Error fetching jobs:', error);
       } finally {
@@ -33,7 +50,7 @@ export default function JobsPage() {
     };
 
     fetchJobs();
-  }, []);
+  }, [setJobs]);
 
   useEffect(() => {
     let filtered = jobs;
@@ -46,10 +63,8 @@ export default function JobsPage() {
       );
     }
 
-    if (locationFilter) {
-      filtered = filtered.filter(job =>
-        job.location.toLowerCase().includes(locationFilter.toLowerCase())
-      );
+    if (locationFilter && locationFilter !== 'all') {
+      filtered = filtered.filter(job => job.location === locationFilter);
     }
 
     setFilteredJobs(filtered);
@@ -76,14 +91,20 @@ export default function JobsPage() {
                 />
               </div>
               <div className="flex-1 relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <Input
-                  type="text"
-                  placeholder="Location"
-                  className="pl-10 h-12"
-                  value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
-                />
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none z-10" />
+                <Select value={locationFilter} onValueChange={setLocationFilter}>
+                  <SelectTrigger className="pl-10 h-12">
+                    <SelectValue placeholder="All Locations" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Locations</SelectItem>
+                    {locations.map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button size="lg" className="h-12 px-8">
                 Search Jobs

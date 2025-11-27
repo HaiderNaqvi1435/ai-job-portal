@@ -5,17 +5,19 @@ import { useRouter } from 'next/navigation';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useInterviewStore } from '@/store/useInterviewStore';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardNav from '@/components/dashboard/DashboardNav';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Clock, Video, User } from 'lucide-react';
+import { Calendar, Clock, Video, User, Plus } from 'lucide-react';
 import { USER_ROLES } from '@/types';
+import Link from 'next/link';
 
 function InterviewsContent() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [interviews, setInterviews] = useState([]);
+  const { interviews, setInterviews } = useInterviewStore();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,16 +30,23 @@ function InterviewsContent() {
     try {
       const interviewsQuery = query(
         collection(db, 'interviews'),
-        where('recruiterId', '==', user.uid),
-        orderBy('scheduledAt', 'desc')
+        where('recruiterId', '==', user.uid)
       );
 
       const snapshot = await getDocs(interviewsQuery);
-      const interviewsData = snapshot.docs.map((doc) => ({
+      let interviewsData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
+      // Sort in memory to avoid composite index requirement
+      interviewsData.sort((a, b) => {
+        const aTime = a.scheduledAt?.seconds || 0;
+        const bTime = b.scheduledAt?.seconds || 0;
+        return bTime - aTime;
+      });
+
+      // IMMEDIATELY update Zustand store
       setInterviews(interviewsData);
     } catch (error) {
       console.error('Error fetching interviews:', error);
@@ -63,25 +72,33 @@ function InterviewsContent() {
 
   if (loading) {
     return (
-      <div>
-        <DashboardNav />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-8">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading interviews...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <DashboardNav />
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
+    <div className="p-8">
+      <div className="mb-8 flex justify-between items-center">
+        <div>
           <h1 className="text-3xl font-bold">Interview Schedule</h1>
           <p className="text-gray-600 mt-2">
             Manage and conduct video interviews with candidates
           </p>
         </div>
+        <Link href="/dashboard/recruiter/jobs">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Schedule Interview
+          </Button>
+        </Link>
+      </div>
 
         {interviews.length === 0 ? (
           <Card>
@@ -161,7 +178,6 @@ function InterviewsContent() {
             ))}
           </div>
         )}
-      </div>
     </div>
   );
 }
@@ -169,7 +185,9 @@ function InterviewsContent() {
 export default function InterviewsPage() {
   return (
     <ProtectedRoute allowedRoles={[USER_ROLES.RECRUITER]}>
-      <InterviewsContent />
+      <DashboardLayout>
+        <InterviewsContent />
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardNav from '@/components/dashboard/DashboardNav';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { USER_ROLES } from '@/types';
 import {
   Briefcase,
@@ -98,10 +98,8 @@ function RecruiterDashboardContent() {
   };
 
   return (
-    <div>
-      <DashboardNav />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
+    <div className="p-8">
+      {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Welcome back, {profile?.name}!
@@ -268,7 +266,6 @@ function RecruiterDashboardContent() {
             )}
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }
@@ -276,7 +273,9 @@ function RecruiterDashboardContent() {
 export default function RecruiterDashboard() {
   return (
     <ProtectedRoute allowedRoles={[USER_ROLES.RECRUITER]}>
-      <RecruiterDashboardContent />
+      <DashboardLayout>
+        <RecruiterDashboardContent />
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }

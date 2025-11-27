@@ -84,21 +84,31 @@ export async function getJobs(filters = {}) {
   try {
     let q = query(collection(db, 'jobs'));
 
+    // If filtering by status, add where clause
     if (filters.status) {
       q = query(q, where('status', '==', filters.status));
     }
 
-    q = query(q, orderBy('createdAt', 'desc'));
-
-    if (filters.limit) {
-      q = query(q, limit(filters.limit));
-    }
-
+    // Fetch all matching documents
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    let jobs = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // Sort by createdAt in memory (to avoid requiring composite index)
+    jobs.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime; // descending order
+    });
+
+    // Apply limit if specified
+    if (filters.limit) {
+      jobs = jobs.slice(0, filters.limit);
+    }
+
+    return jobs;
   } catch (error) {
     console.error('Error getting jobs:', error);
     throw error;
@@ -145,14 +155,22 @@ export async function getRecruiterJobs(recruiterId) {
   try {
     const q = query(
       collection(db, 'jobs'),
-      where('recruiterId', '==', recruiterId),
-      orderBy('createdAt', 'desc')
+      where('recruiterId', '==', recruiterId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    let jobs = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // Sort by createdAt in memory (to avoid requiring composite index)
+    jobs.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime; // descending order
+    });
+
+    return jobs;
   } catch (error) {
     console.error('Error getting recruiter jobs:', error);
     throw error;
@@ -178,14 +196,22 @@ export async function getUserApplications(userId) {
   try {
     const q = query(
       collection(db, 'applications'),
-      where('userId', '==', userId),
-      orderBy('submittedAt', 'desc')
+      where('userId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    let applications = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // Sort in memory to avoid composite index requirement
+    applications.sort((a, b) => {
+      const aTime = a.submittedAt?.seconds || 0;
+      const bTime = b.submittedAt?.seconds || 0;
+      return bTime - aTime;
+    });
+
+    return applications;
   } catch (error) {
     console.error('Error getting user applications:', error);
     throw error;
@@ -196,14 +222,22 @@ export async function getJobApplications(jobId) {
   try {
     const q = query(
       collection(db, 'applications'),
-      where('jobId', '==', jobId),
-      orderBy('submittedAt', 'desc')
+      where('jobId', '==', jobId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    let applications = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // Sort in memory to avoid composite index requirement
+    applications.sort((a, b) => {
+      const aTime = a.submittedAt?.seconds || 0;
+      const bTime = b.submittedAt?.seconds || 0;
+      return bTime - aTime;
+    });
+
+    return applications;
   } catch (error) {
     console.error('Error getting job applications:', error);
     throw error;
@@ -251,14 +285,22 @@ export async function getSkillGapReports(userId) {
   try {
     const q = query(
       collection(db, 'skillGapReports'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    let reports = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // Sort in memory to avoid composite index requirement
+    reports.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+
+    return reports;
   } catch (error) {
     console.error('Error getting skill gap reports:', error);
     throw error;
@@ -283,14 +325,22 @@ export async function getInterviews(userId) {
   try {
     const q = query(
       collection(db, 'interviews'),
-      where('userId', '==', userId),
-      orderBy('scheduledAt', 'desc')
+      where('userId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    let interviews = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // Sort in memory to avoid composite index requirement
+    interviews.sort((a, b) => {
+      const aTime = a.scheduledAt?.seconds || 0;
+      const bTime = b.scheduledAt?.seconds || 0;
+      return bTime - aTime;
+    });
+
+    return interviews;
   } catch (error) {
     console.error('Error getting interviews:', error);
     throw error;
