@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import { useAuthStore } from '@/store/useAuthStore';
+import { setClientCookie } from '@/lib/cookies';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +21,7 @@ import { USER_ROLES } from '@/types';
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setSession } = useAuthStore();
   const defaultRole = searchParams.get('role') || USER_ROLES.JOB_SEEKER;
 
   const [role, setRole] = useState(defaultRole);
@@ -47,15 +50,40 @@ function RegisterForm() {
         validatedData.password
       );
 
+      const firebaseUser = userCredential.user;
+
       // Create user profile in Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        uid: userCredential.user.uid,
+      const userProfile = {
+        uid: firebaseUser.uid,
         name: validatedData.name,
         email: validatedData.email,
         role: validatedData.role,
         profile: {},
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);
+
+      // Get Firebase ID token
+      const token = await firebaseUser.getIdToken();
+
+      // Set session in store
+      setSession({
+        user: {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          emailVerified: firebaseUser.emailVerified,
+        },
+        profile: userProfile,
+        token,
+      });
+
+      // Set cookie
+      setClientCookie('session', token, {
+        expires: 7,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict',
       });
 
       // Redirect to dashboard

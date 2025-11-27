@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import { useAuthStore } from '@/store/useAuthStore';
+import { setClientCookie } from '@/lib/cookies';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +18,7 @@ import { loginSchema } from '@/lib/schemas';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setSession } = useAuthStore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -32,19 +36,53 @@ export default function LoginPage() {
       loginSchema.parse(formData);
 
       // Sign in with Firebase
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const firebaseUser = userCredential.user;
 
-      // Redirect to dashboard
+      // Get Firebase ID token
+      const token = await firebaseUser.getIdToken();
+
+      // Fetch user profile from Firestore
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+
+      if (!userDoc.exists()) {
+        setError('User profile not found. Please contact support.');
+        return;
+      }
+
+      const userProfile = userDoc.data();
+
+      // Set session in store
+      setSession({
+        user: {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          emailVerified: firebaseUser.emailVerified,
+        },
+        profile: userProfile,
+        token,
+      });
+
+      // Set cookie
+      setClientCookie('session', token, {
+        expires: 7,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict',
+      });
+
+      // Redirect to dashboard (will auto-redirect to role-specific dashboard)
       router.push('/dashboard');
     } catch (err) {
       if (err.name === 'ZodError') {
         setError(err.errors[0].message);
       } else if (err.code === 'auth/user-not-found') {
         setError('No account found with this email');
-      } else if (err.code === 'auth/wrong-password') {
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Incorrect password');
       } else if (err.code === 'auth/invalid-email') {
         setError('Invalid email address');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Please try again later');
       } else {
         setError('Failed to sign in. Please try again.');
       }
