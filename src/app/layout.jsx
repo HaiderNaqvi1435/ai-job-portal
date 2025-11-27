@@ -17,6 +17,7 @@ export const metadata = {
 };
 
 import AuthProvider from '@/components/providers/AuthProvider';
+import { Toaster } from '@/components/ui/sonner';
 
 export default function RootLayout({ children }) {
   return (
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           {children}
         </AuthProvider>
+        <Toaster />
       </body>
     </html>
   );

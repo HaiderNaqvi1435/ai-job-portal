@@ -12,6 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { USER_ROLES } from '@/types';
@@ -28,6 +39,8 @@ function JobManagementContent() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState(null);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -74,18 +87,28 @@ function JobManagementContent() {
     setFilteredJobs(filtered);
   }, [searchTerm, statusFilter, jobs]);
 
-  const handleDelete = async (jobId) => {
-    if (!confirm('Are you sure you want to delete this job posting?')) return;
+  const openDeleteDialog = (job) => {
+    setJobToDelete(job);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!jobToDelete) return;
 
     try {
       // Delete from Firebase
-      await deleteJobFromFirebase(jobId);
+      await deleteJobFromFirebase(jobToDelete.id);
 
       // IMMEDIATELY update Zustand store
-      deleteJobFromStore(jobId);
+      deleteJobFromStore(jobToDelete.id);
+
+      toast.success(`"${jobToDelete.title}" has been deleted successfully.`);
+
+      setDeleteDialogOpen(false);
+      setJobToDelete(null);
     } catch (error) {
       console.error('Error deleting job:', error);
-      alert('Failed to delete job');
+      toast.error("Failed to delete job. Please try again.");
     }
   };
 
@@ -231,7 +254,7 @@ function JobManagementContent() {
                         variant="outline"
                         size="sm"
                         className="w-full text-red-600 hover:text-red-700"
-                        onClick={() => handleDelete(job.id)}
+                        onClick={() => openDeleteDialog(job)}
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
@@ -277,6 +300,28 @@ function JobManagementContent() {
             </CardContent>
           </Card>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the job posting "{jobToDelete?.title}".
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
