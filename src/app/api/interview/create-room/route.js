@@ -1,11 +1,23 @@
 import { NextResponse } from 'next/server';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
-const DAILY_API_KEY = process.env.DAILY_API_KEY;
-const DAILY_API_URL = 'https://api.daily.co/v1';
+// Initialize Firebase Admin (if not already initialized)
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
+
+const adminDb = getFirestore();
 
 export async function POST(request) {
   try {
-    const { applicationId, jobId } = await request.json();
+    const { applicationId, jobId, interviewId } = await request.json();
 
     if (!applicationId || !jobId) {
       return NextResponse.json(
@@ -14,49 +26,23 @@ export async function POST(request) {
       );
     }
 
-    // Check if Daily API key is configured
-    if (!DAILY_API_KEY || DAILY_API_KEY === 'your-daily-api-key') {
-      // Return a mock room URL for development
-      const mockRoomUrl = `https://mock.daily.co/interview-${applicationId}-${Date.now()}`;
-      return NextResponse.json({
-        url: mockRoomUrl,
-        name: `interview-${applicationId}`,
-        expires: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
-        message: 'Mock room created. Configure DAILY_API_KEY in .env for real video calls.',
-      });
-    }
+    // Generate unique room ID
+    const roomId = interviewId || `interview-${applicationId}-${Date.now()}`;
 
-    // Create a Daily.co room
-    const response = await fetch(`${DAILY_API_URL}/rooms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DAILY_API_KEY}`,
-      },
-      body: JSON.stringify({
-        name: `interview-${applicationId}-${Date.now()}`,
-        privacy: 'private',
-        properties: {
-          enable_chat: true,
-          enable_screenshare: true,
-          enable_recording: 'local',
-          max_participants: 10,
-          exp: Math.floor(Date.now() / 1000) + 3600, // Expires in 1 hour
-        },
-      }),
+    // Create room document in Firebase (for WebRTC signaling)
+    await adminDb.collection('videoRooms').doc(roomId).set({
+      applicationId,
+      jobId,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+      participants: [],
+      status: 'waiting',
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create room');
-    }
-
-    const room = await response.json();
-
     return NextResponse.json({
-      url: room.url,
-      name: room.name,
-      expires: new Date(room.config.exp * 1000).toISOString(),
+      roomId,
+      expires: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      message: 'WebRTC room created successfully using Firebase',
     });
   } catch (error) {
     console.error('Create room error:', error);

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardNav from '@/components/dashboard/DashboardNav';
-import VideoRoom from '@/components/interview/VideoRoom';
+import WebRTCVideoRoom from '@/components/interview/WebRTCVideoRoom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
@@ -16,10 +16,8 @@ function InterviewContent() {
   const params = useParams();
   const router = useRouter();
   const [interview, setInterview] = useState(null);
-  const [roomUrl, setRoomUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
   useEffect(() => {
     fetchInterview();
@@ -29,11 +27,7 @@ function InterviewContent() {
     try {
       const interviewDoc = await getDoc(doc(db, 'interviews', params.id));
       if (interviewDoc.exists()) {
-        const data = interviewDoc.data();
-        setInterview({ id: interviewDoc.id, ...data });
-        if (data.roomUrl) {
-          setRoomUrl(data.roomUrl);
-        }
+        setInterview({ id: interviewDoc.id, ...interviewDoc.data() });
       } else {
         setError('Interview not found');
       }
@@ -42,38 +36,6 @@ function InterviewContent() {
       setError('Failed to load interview');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const createVideoRoom = async () => {
-    setIsCreatingRoom(true);
-    try {
-      const response = await fetch('/api/interview/create-room', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          applicationId: interview.applicationId,
-          jobId: interview.jobId,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to create room');
-
-      const data = await response.json();
-      setRoomUrl(data.url);
-
-      // Update interview with room URL
-      await updateDoc(doc(db, 'interviews', params.id), {
-        roomUrl: data.url,
-        roomName: data.name,
-        roomExpires: data.expires,
-        updatedAt: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error('Error creating room:', err);
-      setError('Failed to create video room');
-    } finally {
-      setIsCreatingRoom(false);
     }
   };
 
@@ -198,28 +160,15 @@ function InterviewContent() {
               <CardHeader>
                 <CardTitle>Video Interview</CardTitle>
                 <CardDescription>
-                  {roomUrl
-                    ? 'Join the video call to conduct the interview'
-                    : 'Start the video room to begin the interview'}
+                  Conduct the video interview with the candidate
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!roomUrl ? (
-                  <div className="flex flex-col items-center justify-center min-h-[500px]">
-                    <p className="text-gray-600 mb-6">
-                      Create a video room to start the interview
-                    </p>
-                    <Button
-                      onClick={createVideoRoom}
-                      disabled={isCreatingRoom}
-                      size="lg"
-                    >
-                      {isCreatingRoom ? 'Creating Room...' : 'Start Interview'}
-                    </Button>
-                  </div>
-                ) : (
-                  <VideoRoom roomUrl={roomUrl} onLeave={handleLeaveCall} />
-                )}
+                <WebRTCVideoRoom
+                  roomId={params.id}
+                  isInitiator={true}
+                  onLeave={handleLeaveCall}
+                />
               </CardContent>
             </Card>
           </div>

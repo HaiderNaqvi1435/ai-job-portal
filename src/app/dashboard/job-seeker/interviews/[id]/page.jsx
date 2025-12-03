@@ -6,7 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import VideoRoom from '@/components/interview/VideoRoom';
+import WebRTCVideoRoom from '@/components/interview/WebRTCVideoRoom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Clock, Building } from 'lucide-react';
@@ -185,23 +185,11 @@ function InterviewContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!interview.roomUrl ? (
-                  <div className="flex flex-col items-center justify-center min-h-[500px]">
-                    <div className="animate-pulse mb-4">
-                      <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Clock className="h-6 w-6 text-blue-600" />
-                      </div>
-                    </div>
-                    <p className="text-gray-600 mb-2">
-                      Waiting for the interview room to be created
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      The interviewer will start the room at the scheduled time
-                    </p>
-                  </div>
-                ) : (
-                  <VideoRoom roomUrl={interview.roomUrl} onLeave={handleLeaveCall} />
-                )}
+                <WebRTCVideoRoom
+                  roomId={params.id}
+                  isInitiator={false}
+                  onLeave={handleLeaveCall}
+                />
               </CardContent>
             </Card>
           </div>
