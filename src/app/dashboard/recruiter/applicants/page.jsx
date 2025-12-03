@@ -22,6 +22,7 @@ import {
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import ScheduleInterviewDialog from '@/components/interview/ScheduleInterviewDialog';
+import ResumeViewer from '@/components/resume/ResumeViewer';
 import { USER_ROLES, APPLICATION_STATUS } from '@/types';
 import { Search, Mail, Phone, FileText, Video, User, Calendar, Briefcase, Filter } from 'lucide-react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -486,20 +487,19 @@ function ApplicantsContent() {
                 </p>
               </div>
 
+              {/* Resume Viewer */}
+              {(selectedApplication.resumeUrl || selectedApplication.resumeText) && (
+                <div>
+                  <h4 className="font-semibold mb-3">Resume</h4>
+                  <ResumeViewer
+                    resumeUrl={selectedApplication.resumeUrl}
+                    resumeText={selectedApplication.resumeText}
+                    applicantName={selectedApplication.name}
+                  />
+                </div>
+              )}
+
               <div className="flex gap-3 pt-4">
-                {selectedApplication.resumeUrl && (
-                  <a
-                    href={selectedApplication.resumeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1"
-                  >
-                    <Button variant="outline" className="w-full">
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Resume
-                    </Button>
-                  </a>
-                )}
                 <Button
                   onClick={() => {
                     setDetailsDialogOpen(false);
