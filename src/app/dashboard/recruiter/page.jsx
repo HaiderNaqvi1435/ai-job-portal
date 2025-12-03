@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { USER_ROLES } from '@/types';
+import { USER_ROLES, APPLICATION_STATUS } from '@/types';
 import {
   Briefcase,
   Users,
@@ -21,6 +21,8 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useJobStore } from '@/store/useJobStore';
 import { getRecruiterJobs } from '@/lib/api/firebase-helpers';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 function RecruiterDashboardContent() {
   const { profile } = useAuthStore();
@@ -32,6 +34,7 @@ function RecruiterDashboardContent() {
     interviewsScheduled: 0,
     positionsFilled: 0,
   });
+  const [jobApplicationCounts, setJobApplicationCounts] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,11 +45,54 @@ function RecruiterDashboardContent() {
           // IMMEDIATELY update Zustand store
           setJobs(recruiterJobs);
 
+          // Fetch applications for all jobs
+          const jobIds = recruiterJobs.map(job => job.id);
+          let totalApplicants = 0;
+          let interviewsScheduled = 0;
+          let positionsFilled = 0;
+          const applicantCounts = {};
+
+          if (jobIds.length > 0) {
+            // Fetch applications in batches (Firebase 'in' query has limit of 10)
+            const batchSize = 10;
+            for (let i = 0; i < jobIds.length; i += batchSize) {
+              const batchJobIds = jobIds.slice(i, i + batchSize);
+              const applicationsQuery = query(
+                collection(db, 'applications'),
+                where('jobId', 'in', batchJobIds)
+              );
+              const applicationsSnapshot = await getDocs(applicationsQuery);
+
+              applicationsSnapshot.docs.forEach(doc => {
+                const app = doc.data();
+                const jobId = app.jobId;
+
+                // Count total applicants
+                totalApplicants++;
+
+                // Count per job
+                applicantCounts[jobId] = (applicantCounts[jobId] || 0) + 1;
+
+                // Count interviews
+                if (app.status === APPLICATION_STATUS.INTERVIEW_SCHEDULED) {
+                  interviewsScheduled++;
+                }
+
+                // Count filled positions
+                if (app.status === APPLICATION_STATUS.HIRED) {
+                  positionsFilled++;
+                }
+              });
+            }
+          }
+
+          setJobApplicationCounts(applicantCounts);
+
           setStats({
             activeJobs: recruiterJobs.filter(j => j.status === 'active').length,
-            totalApplicants: 0, // Will be calculated from applications
-            interviewsScheduled: 0,
-            positionsFilled: 0,
+            totalApplicants,
+            interviewsScheduled,
+            positionsFilled,
           });
         } catch (error) {
           console.error('Error fetching jobs:', error);
@@ -225,11 +271,11 @@ function RecruiterDashboardContent() {
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         <span className="flex items-center">
                           <Users className="h-4 w-4 mr-1" />
-                          0 applicants
+                          {jobApplicationCounts[job.id] || 0} {jobApplicationCounts[job.id] === 1 ? 'applicant' : 'applicants'}
                         </span>
                         <span className="flex items-center">
                           <Eye className="h-4 w-4 mr-1" />
-                          0 views
+                          {job.views || 0} views
                         </span>
                         <span className="flex items-center">
                           <Clock className="h-4 w-4 mr-1" />

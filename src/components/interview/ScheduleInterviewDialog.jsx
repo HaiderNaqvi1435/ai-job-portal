@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Clock } from 'lucide-react';
-import { createInterview } from '@/lib/api/firebase-helpers';
+import { createInterview, updateApplication } from '@/lib/api/firebase-helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useInterviewStore } from '@/store/useInterviewStore';
+import { APPLICATION_STATUS } from '@/types';
 import { Timestamp } from 'firebase/firestore';
 
 export default function ScheduleInterviewDialog({ open, onOpenChange, applicationData, jobData }) {
@@ -63,6 +64,11 @@ export default function ScheduleInterviewDialog({ open, onOpenChange, applicatio
 
       // Create interview in Firebase
       const newInterview = await createInterview(interviewData);
+
+      // Update application status to interview_scheduled
+      await updateApplication(applicationData.id, {
+        status: APPLICATION_STATUS.INTERVIEW_SCHEDULED
+      });
 
       // IMMEDIATELY update Zustand store
       addInterview(newInterview);

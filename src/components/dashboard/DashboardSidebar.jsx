@@ -16,6 +16,8 @@ import {
   Plus,
   Sparkles,
   ClipboardList,
+  Upload,
+  Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -63,6 +65,11 @@ export default function DashboardSidebar() {
       href: '/dashboard/job-seeker',
     },
     {
+      icon: Search,
+      label: 'Browse Jobs',
+      href: '/jobs',
+    },
+    {
       icon: ClipboardList,
       label: 'My Applications',
       href: '/dashboard/job-seeker/applications',
@@ -71,6 +78,11 @@ export default function DashboardSidebar() {
       icon: Video,
       label: 'My Interviews',
       href: '/dashboard/job-seeker/interviews',
+    },
+    {
+      icon: Upload,
+      label: 'Resume Management',
+      href: '/dashboard/resume',
     },
     {
       icon: FileText,

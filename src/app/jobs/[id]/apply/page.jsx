@@ -111,19 +111,28 @@ function ApplicationFormContent() {
     setSubmitting(true);
 
     try {
-      // Create application
+      // Create application with full job details
       await createApplication({
         jobId: params.id,
+        jobTitle: job.title,
+        companyName: job.companyName || 'Company',
+        location: job.location || 'Not specified',
+        employmentType: job.employmentType || 'full-time',
+        recruiterId: job.recruiterId,
         userId: user.uid,
         name: formData.name,
         email: formData.email,
         phone: formData.phone || '',
         coverLetter: formData.coverLetter || '',
         resumeUrl: formData.resumeUrl,
+        resumeText: profile?.resumeText || '',
         portfolioUrl: formData.portfolioUrl || '',
         linkedinUrl: formData.linkedinUrl || '',
         experience: formData.experience || '',
+        skills: profile?.skills || [],
         status: 'pending',
+        atsScore: 0,
+        fitScore: 0,
       });
 
       toast.success('Application submitted successfully!');

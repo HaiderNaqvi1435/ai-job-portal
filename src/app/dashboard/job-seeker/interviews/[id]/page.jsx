@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardNav from '@/components/dashboard/DashboardNav';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import VideoRoom from '@/components/interview/VideoRoom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,20 +45,15 @@ function InterviewContent() {
 
   if (loading) {
     return (
-      <div>
-        <DashboardNav />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (error || !interview) {
     return (
-      <div>
-        <DashboardNav />
-        <div className="max-w-4xl mx-auto p-6">
+      <div className="p-8">
           <Card>
             <CardHeader>
               <CardTitle className="text-red-600">Error</CardTitle>
@@ -72,14 +67,11 @@ function InterviewContent() {
             </CardContent>
           </Card>
         </div>
-      </div>
     );
   }
 
   return (
-    <div>
-      <DashboardNav />
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="p-8">
         <Button
           variant="ghost"
           onClick={() => router.push('/dashboard/job-seeker/interviews')}
@@ -121,12 +113,14 @@ function InterviewContent() {
                   <div>
                     <p className="text-sm font-medium">Date</p>
                     <p className="text-sm text-gray-600">
-                      {new Date(interview.scheduledAt).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
+                      {interview.scheduledAt?.seconds
+                        ? new Date(interview.scheduledAt.seconds * 1000).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })
+                        : 'Not scheduled'}
                     </p>
                   </div>
                 </div>
@@ -136,10 +130,12 @@ function InterviewContent() {
                   <div>
                     <p className="text-sm font-medium">Time</p>
                     <p className="text-sm text-gray-600">
-                      {new Date(interview.scheduledAt).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {interview.scheduledAt?.seconds
+                        ? new Date(interview.scheduledAt.seconds * 1000).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'Not scheduled'}
                     </p>
                   </div>
                 </div>
@@ -211,14 +207,15 @@ function InterviewContent() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
 export default function InterviewPage() {
   return (
     <ProtectedRoute allowedRoles={[USER_ROLES.JOB_SEEKER]}>
-      <InterviewContent />
+      <DashboardLayout>
+        <InterviewContent />
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }

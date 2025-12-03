@@ -18,6 +18,12 @@ export default function VideoRoom({ roomUrl, onLeave }) {
   useEffect(() => {
     if (!roomUrl || !containerRef.current) return;
 
+    // Prevent duplicate instances - destroy existing frame first
+    if (callFrameRef.current) {
+      callFrameRef.current.destroy();
+      callFrameRef.current = null;
+    }
+
     // Create Daily call frame
     const callFrame = DailyIframe.createFrame(containerRef.current, {
       showLeaveButton: false,
@@ -58,8 +64,9 @@ export default function VideoRoom({ roomUrl, onLeave }) {
 
     // Cleanup
     return () => {
-      if (callFrame) {
-        callFrame.destroy();
+      if (callFrameRef.current) {
+        callFrameRef.current.destroy();
+        callFrameRef.current = null;
       }
     };
   }, [roomUrl, onLeave]);

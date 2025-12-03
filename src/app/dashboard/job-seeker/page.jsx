@@ -1,11 +1,12 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { USER_ROLES } from '@/types';
+import { USER_ROLES, APPLICATION_STATUS } from '@/types';
 import {
   FileText,
   Target,
@@ -14,12 +15,55 @@ import {
   DollarSign,
   Clock,
   Video,
+  MapPin,
+  Building2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
+import { getUserApplications } from '@/lib/api/firebase-helpers';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 function JobSeekerContent() {
-  const { profile } = useAuthStore();
+  const { profile, user } = useAuthStore();
+  const [loading, setLoading] = useState(true);
+  const [applications, setApplications] = useState([]);
+  const [stats, setStats] = useState({
+    totalApplications: 0,
+    interviews: 0,
+    profileViews: 0,
+    savedJobs: 0,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (user?.uid) {
+        try {
+          // Fetch user applications
+          const userApps = await getUserApplications(user.uid);
+          setApplications(userApps);
+
+          // Calculate stats
+          const interviews = userApps.filter(
+            app => app.status === APPLICATION_STATUS.INTERVIEW_SCHEDULED
+          ).length;
+
+          setStats({
+            totalApplications: userApps.length,
+            interviews,
+            profileViews: profile?.views || 0,
+            savedJobs: 0, // TODO: Implement saved jobs feature
+          });
+        } catch (error) {
+          console.error('Error fetching applications:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+  }, [user, profile]);
 
   const aiTools = [
     {
@@ -79,7 +123,7 @@ function JobSeekerContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Applications</p>
-                    <p className="text-2xl font-bold">0</p>
+                    <p className="text-2xl font-bold">{stats.totalApplications}</p>
                   </div>
                   <Briefcase className="h-8 w-8 text-blue-600" />
                 </div>
@@ -92,7 +136,7 @@ function JobSeekerContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Interviews</p>
-                    <p className="text-2xl font-bold">0</p>
+                    <p className="text-2xl font-bold">{stats.interviews}</p>
                   </div>
                   <Video className="h-8 w-8 text-green-600" />
                 </div>
@@ -104,7 +148,7 @@ function JobSeekerContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Profile Views</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{stats.profileViews}</p>
                 </div>
                 <Target className="h-8 w-8 text-purple-600" />
               </div>
@@ -115,7 +159,7 @@ function JobSeekerContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Saved Jobs</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{stats.savedJobs}</p>
                 </div>
                 <FileText className="h-8 w-8 text-yellow-600" />
               </div>
@@ -152,17 +196,72 @@ function JobSeekerContent() {
         {/* Recent Applications */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Applications</CardTitle>
-            <CardDescription>Track your job applications</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <Briefcase className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p>No applications yet</p>
-              <Link href="/jobs">
-                <Button className="mt-4">Browse Jobs</Button>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Recent Applications</CardTitle>
+                <CardDescription>Track your job applications</CardDescription>
+              </div>
+              <Link href="/dashboard/job-seeker/applications">
+                <Button variant="outline">View All</Button>
               </Link>
             </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading applications...</p>
+              </div>
+            ) : applications.length > 0 ? (
+              <div className="space-y-4">
+                {applications.slice(0, 5).map((app) => (
+                  <div
+                    key={app.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold">{app.jobTitle}</h3>
+                        <Badge variant={
+                          app.status === APPLICATION_STATUS.SHORTLISTED ? 'default' :
+                          app.status === APPLICATION_STATUS.INTERVIEW_SCHEDULED ? 'default' :
+                          'secondary'
+                        }>
+                          {app.status?.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span className="flex items-center">
+                          <Building2 className="h-4 w-4 mr-1" />
+                          {app.companyName}
+                        </span>
+                        <span className="flex items-center">
+                          <MapPin className="h-4 w-4 mr-1" />
+                          {app.location}
+                        </span>
+                        <span className="flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {new Date(app.submittedAt?.seconds * 1000 || Date.now()).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <Link href={`/jobs/${app.jobId}`}>
+                      <Button variant="outline" size="sm">
+                        View Job
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Briefcase className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p>No applications yet</p>
+                <Link href="/jobs">
+                  <Button className="mt-4">Browse Jobs</Button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
     </div>

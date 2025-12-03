@@ -70,20 +70,27 @@ function ApplicantsContent() {
         const jobIds = jobsData.map(job => job.id);
         if (jobIds.length === 0) {
           setApplications([]);
+          setFilteredApplications([]);
           setLoading(false);
           return;
         }
 
-        // Fetch applications for all jobs
-        const applicationsQuery = query(
-          collection(db, 'applications'),
-          where('jobId', 'in', jobIds)
-        );
-        const applicationsSnapshot = await getDocs(applicationsQuery);
-        let applicationsData = applicationsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        // Fetch applications in batches (Firebase 'in' query has limit of 10)
+        let applicationsData = [];
+        const batchSize = 10;
+        for (let i = 0; i < jobIds.length; i += batchSize) {
+          const batchJobIds = jobIds.slice(i, i + batchSize);
+          const applicationsQuery = query(
+            collection(db, 'applications'),
+            where('jobId', 'in', batchJobIds)
+          );
+          const applicationsSnapshot = await getDocs(applicationsQuery);
+          const batchData = applicationsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          applicationsData = [...applicationsData, ...batchData];
+        }
 
         // Sort in memory by submission date
         applicationsData.sort((a, b) => {
@@ -92,12 +99,14 @@ function ApplicantsContent() {
           return bTime - aTime;
         });
 
-        // Enrich with job titles
+        // Enrich with job titles for applications that don't have them
         applicationsData = applicationsData.map(app => {
           const job = jobsData.find(j => j.id === app.jobId);
           return {
             ...app,
-            jobTitle: job?.title || 'Unknown Job'
+            jobTitle: app.jobTitle || job?.title || 'Unknown Job',
+            companyName: app.companyName || job?.companyName || 'Company',
+            location: app.location || job?.location || 'Location'
           };
         });
 

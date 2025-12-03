@@ -6,7 +6,7 @@ import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuthStore } from '@/store/useAuthStore';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardNav from '@/components/dashboard/DashboardNav';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, Video, Building } from 'lucide-react';
@@ -28,15 +28,21 @@ function InterviewsContent() {
     try {
       const interviewsQuery = query(
         collection(db, 'interviews'),
-        where('candidateId', '==', user.uid),
-        orderBy('scheduledAt', 'desc')
+        where('candidateId', '==', user.uid)
       );
 
       const snapshot = await getDocs(interviewsQuery);
-      const interviewsData = snapshot.docs.map((doc) => ({
+      let interviewsData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
+      // Sort in memory to avoid composite index requirement
+      interviewsData.sort((a, b) => {
+        const aTime = a.scheduledAt?.seconds || 0;
+        const bTime = b.scheduledAt?.seconds || 0;
+        return bTime - aTime;
+      });
 
       setInterviews(interviewsData);
     } catch (error) {
@@ -63,19 +69,14 @@ function InterviewsContent() {
 
   if (loading) {
     return (
-      <div>
-        <DashboardNav />
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div>
-      <DashboardNav />
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">My Interviews</h1>
           <p className="text-gray-600 mt-2">
@@ -120,12 +121,14 @@ function InterviewsContent() {
                       <div>
                         <p className="text-sm font-medium">Interview Date</p>
                         <p className="text-sm text-gray-600">
-                          {new Date(interview.scheduledAt).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
+                          {interview.scheduledAt?.seconds
+                            ? new Date(interview.scheduledAt.seconds * 1000).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })
+                            : 'Not scheduled'}
                         </p>
                       </div>
                     </div>
@@ -135,10 +138,12 @@ function InterviewsContent() {
                       <div>
                         <p className="text-sm font-medium">Time</p>
                         <p className="text-sm text-gray-600">
-                          {new Date(interview.scheduledAt).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {interview.scheduledAt?.seconds
+                            ? new Date(interview.scheduledAt.seconds * 1000).toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : 'Not scheduled'}
                         </p>
                       </div>
                     </div>
@@ -166,14 +171,15 @@ function InterviewsContent() {
           </div>
         )}
       </div>
-    </div>
   );
 }
 
 export default function InterviewsPage() {
   return (
     <ProtectedRoute allowedRoles={[USER_ROLES.JOB_SEEKER]}>
-      <InterviewsContent />
+      <DashboardLayout>
+        <InterviewsContent />
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }

@@ -150,7 +150,9 @@ function InterviewContent() {
                   <div>
                     <p className="text-sm font-medium">Date</p>
                     <p className="text-sm text-gray-600">
-                      {new Date(interview.scheduledAt).toLocaleDateString()}
+                      {interview.scheduledAt?.seconds
+                        ? new Date(interview.scheduledAt.seconds * 1000).toLocaleDateString()
+                        : 'Not scheduled'}
                     </p>
                   </div>
                 </div>
@@ -160,7 +162,9 @@ function InterviewContent() {
                   <div>
                     <p className="text-sm font-medium">Time</p>
                     <p className="text-sm text-gray-600">
-                      {new Date(interview.scheduledAt).toLocaleTimeString()}
+                      {interview.scheduledAt?.seconds
+                        ? new Date(interview.scheduledAt.seconds * 1000).toLocaleTimeString()
+                        : 'Not scheduled'}
                     </p>
                   </div>
                 </div>

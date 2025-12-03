@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardNav from '@/components/dashboard/DashboardNav';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { USER_ROLES, APPLICATION_STATUS } from '@/types';
 import { FileText, Calendar, Building2, MapPin, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
@@ -56,9 +56,7 @@ function MyApplicationsContent() {
   };
 
   return (
-    <div>
-      <DashboardNav />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             My Applications
@@ -93,11 +91,11 @@ function MyApplicationsContent() {
                       <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                         <span className="flex items-center">
                           <Building2 className="h-4 w-4 mr-1" />
-                          Company Name
+                          {application.companyName || 'Company'}
                         </span>
                         <span className="flex items-center">
                           <MapPin className="h-4 w-4 mr-1" />
-                          Location
+                          {application.location || 'Location'}
                         </span>
                         <span className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
@@ -172,7 +170,6 @@ function MyApplicationsContent() {
             </CardContent>
           </Card>
         )}
-      </div>
     </div>
   );
 }
@@ -180,7 +177,9 @@ function MyApplicationsContent() {
 export default function MyApplicationsPage() {
   return (
     <ProtectedRoute allowedRoles={[USER_ROLES.JOB_SEEKER]}>
-      <MyApplicationsContent />
+      <DashboardLayout>
+        <MyApplicationsContent />
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }

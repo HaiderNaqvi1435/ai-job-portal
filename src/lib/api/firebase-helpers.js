@@ -204,14 +204,42 @@ export async function getUserApplications(userId) {
       ...doc.data()
     }));
 
+    // Enrich applications with job details if missing
+    const enrichedApplications = await Promise.all(
+      applications.map(async (app) => {
+        // If application already has job details, return as is
+        if (app.jobTitle && app.companyName && app.location) {
+          return app;
+        }
+
+        // Otherwise, fetch job details
+        try {
+          const job = await getJobById(app.jobId);
+          if (job) {
+            return {
+              ...app,
+              jobTitle: app.jobTitle || job.title || 'Unknown Job',
+              companyName: app.companyName || job.companyName || 'Company',
+              location: app.location || job.location || 'Location',
+              employmentType: app.employmentType || job.employmentType || 'full-time'
+            };
+          }
+        } catch (error) {
+          console.error('Error fetching job details for application:', error);
+        }
+
+        return app;
+      })
+    );
+
     // Sort in memory to avoid composite index requirement
-    applications.sort((a, b) => {
+    enrichedApplications.sort((a, b) => {
       const aTime = a.submittedAt?.seconds || 0;
       const bTime = b.submittedAt?.seconds || 0;
       return bTime - aTime;
     });
 
-    return applications;
+    return enrichedApplications;
   } catch (error) {
     console.error('Error getting user applications:', error);
     throw error;
