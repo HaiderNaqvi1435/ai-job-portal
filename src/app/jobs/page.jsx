@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import { getJobs } from '@/lib/api/firebase-helpers';
 import { useJobStore } from '@/store/useJobStore';
 import { JOB_STATUS } from '@/types';
 
-export default function JobsPage() {
+function JobsContent() {
   const searchParams = useSearchParams();
   const { jobs, setJobs } = useJobStore();
   const [filteredJobs, setFilteredJobs] = useState([]);
@@ -237,5 +237,17 @@ export default function JobsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <JobsContent />
+    </Suspense>
   );
 }

@@ -33,6 +33,7 @@ export class WebRTCService {
     this.unsubscribes = [];
     this.offerProcessed = false; // Track if offer has been processed
     this.answerProcessed = false; // Track if answer has been processed
+    this.remoteStreamCallbackCalled = false; // Track if remote stream callback was called
   }
 
   // Initialize local media (camera and microphone)
@@ -67,13 +68,9 @@ export class WebRTCService {
       });
     }
 
-    // Handle remote stream
+    // Initialize remote stream
     this.remoteStream = new MediaStream();
-    this.peerConnection.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((track) => {
-        this.remoteStream.addTrack(track);
-      });
-    };
+    // Note: ontrack handler will be set in joinRoom()
 
     return this.peerConnection;
   }
@@ -81,53 +78,108 @@ export class WebRTCService {
   // Join or create a room
   async joinRoom(onRemoteStream, onConnectionStateChange) {
     try {
+      console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Joining room ${this.roomId}`);
+
       const roomRef = doc(db, 'videoRooms', this.roomId);
       const roomSnapshot = await getDoc(roomRef);
 
+      console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Room exists:`, roomSnapshot.exists());
+
       // If initiator joins and room exists, clean it up for fresh start
       if (this.isInitiator && roomSnapshot.exists()) {
-        console.log('Initiator cleaning up existing room for fresh start');
+        console.log('Initiator: Cleaning up existing room for fresh start');
         await this.cleanupRoom(roomRef);
       } else if (!roomSnapshot.exists()) {
         // Create room if it doesn't exist
+        console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Creating new room`);
         await this.createRoom(roomRef);
       }
 
       // Create peer connection
+      console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Creating peer connection`);
       this.createPeerConnection();
 
       // Listen for connection state changes
       this.peerConnection.onconnectionstatechange = () => {
+        console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Connection state changed to:`, this.peerConnection.connectionState);
         if (onConnectionStateChange) {
           onConnectionStateChange(this.peerConnection.connectionState);
         }
       };
 
-      // Listen for remote stream
+      // Also listen to ICE connection state for more detailed status
+      this.peerConnection.oniceconnectionstatechange = () => {
+        console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: ICE connection state:`, this.peerConnection.iceConnectionState);
+
+        // Treat 'connected' or 'completed' ICE state as fully connected
+        if (this.peerConnection.iceConnectionState === 'connected' ||
+            this.peerConnection.iceConnectionState === 'completed') {
+          console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: ICE connection established!`);
+          if (onConnectionStateChange) {
+            onConnectionStateChange('connected');
+          }
+        }
+      };
+
+      // Listen for ICE gathering state
+      this.peerConnection.onicegatheringstatechange = () => {
+        console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: ICE gathering state:`, this.peerConnection.iceGatheringState);
+      };
+
+      // Listen for remote stream - USE STREAM FROM EVENT DIRECTLY
       this.peerConnection.ontrack = (event) => {
-        event.streams[0].getTracks().forEach((track) => {
-          this.remoteStream.addTrack(track);
-        });
-        if (onRemoteStream) {
-          onRemoteStream(this.remoteStream);
+        console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Remote track received (kind: ${event.track.kind})`);
+        console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Track state - enabled: ${event.track.enabled}, muted: ${event.track.muted}, readyState: ${event.track.readyState}`);
+
+        // Use the stream directly from the event - this is the most reliable way
+        if (event.streams && event.streams[0]) {
+          const stream = event.streams[0];
+          console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Using stream from event, tracks:`, stream.getTracks().length);
+
+          // Store reference to the stream
+          this.remoteStream = stream;
+
+          // Call callback immediately for each track (video element will handle it properly with autoPlay)
+          if (onRemoteStream && !this.remoteStreamCallbackCalled) {
+            this.remoteStreamCallbackCalled = true;
+            console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Calling onRemoteStream with event stream`);
+            onRemoteStream(stream);
+          }
+
+          // Check if we have both tracks for connected state
+          const hasAudio = stream.getAudioTracks().length > 0;
+          const hasVideo = stream.getVideoTracks().length > 0;
+          console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Stream status - Audio: ${hasAudio}, Video: ${hasVideo}`);
+
+          if (hasAudio && hasVideo) {
+            console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Both tracks present, triggering connected state`);
+            if (onConnectionStateChange) {
+              onConnectionStateChange('connected');
+            }
+          }
         }
       };
 
       if (this.isInitiator) {
+        console.log('Initiator: Creating offer and listening for answer');
         // Initiator creates offer
         await this.createOffer(roomRef);
         // Listen for answer
         this.listenForAnswer(roomRef);
       } else {
+        console.log('Joiner: Listening for offer to create answer');
         // Joiner listens for offer and creates answer
         await this.listenForOfferAndAnswer(roomRef);
       }
 
       // Listen for ICE candidates
+      console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Starting to listen for ICE candidates`);
       this.listenForICECandidates();
 
+      console.log(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Room join setup complete`);
+
     } catch (error) {
-      console.error('Error joining room:', error);
+      console.error(`${this.isInitiator ? 'Initiator' : 'Joiner'}: Error joining room:`, error);
       throw error;
     }
   }
@@ -173,38 +225,58 @@ export class WebRTCService {
 
   // Create offer (initiator)
   async createOffer(roomRef) {
-    // Check signaling state
-    if (this.peerConnection.signalingState !== 'stable') {
-      console.log('Not in stable state, waiting...');
-      return;
-    }
-
-    const offer = await this.peerConnection.createOffer();
-    await this.peerConnection.setLocalDescription(offer);
-
-    console.log('Offer created, sending to Firebase');
-
-    await setDoc(roomRef, {
-      offer: {
-        type: offer.type,
-        sdp: offer.sdp,
-      },
-      status: 'waiting', // Signal that offer is ready
-    }, { merge: true });
-
-    // Collect ICE candidates
-    this.peerConnection.onicecandidate = async (event) => {
-      if (event.candidate) {
-        await addDoc(collection(db, 'videoRooms', this.roomId, 'offerCandidates'), {
-          candidate: event.candidate.toJSON(),
-          timestamp: new Date(),
-        });
+    try {
+      // Check if offer already created
+      if (this.peerConnection.localDescription) {
+        console.log('Offer already created, skipping...');
+        return;
       }
-    };
+
+      // Check signaling state
+      if (this.peerConnection.signalingState !== 'stable') {
+        console.log('Not in stable state for offer creation, current state:', this.peerConnection.signalingState);
+        return;
+      }
+
+      console.log('Creating offer...');
+      const offer = await this.peerConnection.createOffer();
+      await this.peerConnection.setLocalDescription(offer);
+
+      console.log('Offer created, sending to Firebase');
+
+      await setDoc(roomRef, {
+        offer: {
+          type: offer.type,
+          sdp: offer.sdp,
+        },
+        status: 'waiting', // Signal that offer is ready
+      }, { merge: true });
+
+      console.log('Offer sent to Firebase successfully');
+
+      // Collect ICE candidates
+      this.peerConnection.onicecandidate = async (event) => {
+        if (event.candidate) {
+          try {
+            await addDoc(collection(db, 'videoRooms', this.roomId, 'offerCandidates'), {
+              candidate: event.candidate.toJSON(),
+              timestamp: new Date(),
+            });
+          } catch (error) {
+            console.error('Error adding ICE candidate:', error);
+          }
+        }
+      };
+    } catch (error) {
+      console.error('Error creating offer:', error);
+      throw error;
+    }
   }
 
   // Listen for answer (initiator)
   listenForAnswer(roomRef) {
+    console.log('Initiator: Starting to listen for answer...');
+
     const unsubscribe = onSnapshot(roomRef, async (snapshot) => {
       const data = snapshot.data();
 
@@ -213,26 +285,30 @@ export class WebRTCService {
         try {
           this.answerProcessed = true;
 
-          console.log('Processing answer from joiner...');
+          console.log('Initiator: Answer received from joiner');
+          console.log('Initiator: Current signaling state:', this.peerConnection.signalingState);
+          console.log('Initiator: Current remote description:', this.peerConnection.currentRemoteDescription ? 'exists' : 'none');
 
           // Check if we already have a remote description
           if (this.peerConnection.currentRemoteDescription) {
-            console.log('Remote description already set, skipping');
+            console.log('Initiator: Remote description already set, skipping');
             return;
           }
 
           // Check signaling state
           if (this.peerConnection.signalingState !== 'have-local-offer') {
-            console.log('Not in correct state to receive answer, current state:', this.peerConnection.signalingState);
+            console.log('Initiator: Not in correct state to receive answer, current state:', this.peerConnection.signalingState);
             this.answerProcessed = false; // Reset flag
             return;
           }
 
+          console.log('Initiator: Setting remote description (answer)...');
           const answer = new RTCSessionDescription(data.answer);
           await this.peerConnection.setRemoteDescription(answer);
-          console.log('Remote description (answer) set successfully');
+          console.log('Initiator: Remote description (answer) set successfully');
+          console.log('Initiator: Final signaling state:', this.peerConnection.signalingState);
         } catch (error) {
-          console.error('Error setting remote answer:', error);
+          console.error('Initiator: Error setting remote answer:', error);
           this.answerProcessed = false; // Reset flag on error
         }
       }
@@ -242,6 +318,8 @@ export class WebRTCService {
 
   // Listen for offer and create answer (joiner)
   async listenForOfferAndAnswer(roomRef) {
+    console.log('Joiner: Starting to listen for offer...');
+
     // Wait for a valid offer using a listener
     const unsubscribe = onSnapshot(roomRef, async (snapshot) => {
       const data = snapshot.data();
@@ -252,25 +330,40 @@ export class WebRTCService {
           // Mark as processing to prevent duplicate processing
           this.offerProcessed = true;
 
-          console.log('Processing offer from initiator...');
+          console.log('Joiner: Offer received from initiator');
+          console.log('Joiner: Current signaling state:', this.peerConnection.signalingState);
+          console.log('Joiner: Current local description:', this.peerConnection.localDescription ? 'exists' : 'none');
+          console.log('Joiner: Current remote description:', this.peerConnection.remoteDescription ? 'exists' : 'none');
+
+          // Check if we already have a local description (answer)
+          if (this.peerConnection.localDescription) {
+            console.log('Joiner: Answer already created, skipping...');
+            unsubscribe();
+            return;
+          }
 
           // Only process if we're in stable state (haven't set remote description yet)
           if (this.peerConnection.signalingState !== 'stable') {
-            console.log('Not in stable state, waiting...');
+            console.log('Joiner: Not in stable state, waiting... Current state:', this.peerConnection.signalingState);
             this.offerProcessed = false; // Reset flag
             return;
           }
 
+          console.log('Joiner: Setting remote description (offer)...');
           // Set remote description (the offer)
           const offer = new RTCSessionDescription(data.offer);
           await this.peerConnection.setRemoteDescription(offer);
-          console.log('Remote description (offer) set successfully');
+          console.log('Joiner: Remote description (offer) set successfully');
+          console.log('Joiner: New signaling state after setRemoteDescription:', this.peerConnection.signalingState);
 
+          console.log('Joiner: Creating answer...');
           // Create and set local description (the answer)
           const answer = await this.peerConnection.createAnswer();
           await this.peerConnection.setLocalDescription(answer);
-          console.log('Local description (answer) created');
+          console.log('Joiner: Local description (answer) created and set');
+          console.log('Joiner: Final signaling state:', this.peerConnection.signalingState);
 
+          console.log('Joiner: Sending answer to Firebase...');
           // Send answer to Firebase
           await updateDoc(roomRef, {
             answer: {
@@ -280,22 +373,27 @@ export class WebRTCService {
             status: 'connected',
           });
 
-          console.log('Answer sent to Firebase');
+          console.log('Joiner: Answer sent to Firebase successfully');
 
           // Collect ICE candidates
           this.peerConnection.onicecandidate = async (event) => {
             if (event.candidate) {
-              await addDoc(collection(db, 'videoRooms', this.roomId, 'answerCandidates'), {
-                candidate: event.candidate.toJSON(),
-                timestamp: new Date(),
-              });
+              try {
+                console.log('Joiner: Adding ICE candidate...');
+                await addDoc(collection(db, 'videoRooms', this.roomId, 'answerCandidates'), {
+                  candidate: event.candidate.toJSON(),
+                  timestamp: new Date(),
+                });
+              } catch (error) {
+                console.error('Joiner: Error adding ICE candidate:', error);
+              }
             }
           };
 
           // Stop listening once answer is sent
           unsubscribe();
         } catch (error) {
-          console.error('Error in listenForOfferAndAnswer:', error);
+          console.error('Joiner: Error in listenForOfferAndAnswer:', error);
           this.offerProcessed = false; // Reset flag on error
         }
       }

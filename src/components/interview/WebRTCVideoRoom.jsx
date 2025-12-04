@@ -44,14 +44,28 @@ export default function WebRTCVideoRoom({ roomId, isInitiator = false, onLeave }
         await webrtcServiceRef.current.joinRoom(
           // On remote stream
           (remoteStream) => {
+            console.log('React: Remote stream callback received');
+            console.log('React: Remote stream has tracks:', remoteStream.getTracks().length);
+
+            // Log each track details
+            remoteStream.getTracks().forEach(track => {
+              console.log(`React: Track - kind: ${track.kind}, enabled: ${track.enabled}, readyState: ${track.readyState}`);
+            });
+
             if (remoteVideoRef.current) {
+              console.log('React: Setting remote video srcObject (called once with both tracks)');
               remoteVideoRef.current.srcObject = remoteStream;
+              console.log('React: Remote video srcObject set - autoPlay and event handlers will play it');
+            } else {
+              console.log('React: Remote video ref is null');
             }
           },
           // On connection state change
           (state) => {
+            console.log('React: Connection state changed to:', state);
             setConnectionState(state);
             if (state === 'connected') {
+              console.log('React: Setting isConnected = true');
               setIsConnected(true);
               setIsConnecting(false);
             } else if (state === 'disconnected' || state === 'failed') {
@@ -177,7 +191,16 @@ export default function WebRTCVideoRoom({ roomId, isInitiator = false, onLeave }
               ref={remoteVideoRef}
               autoPlay
               playsInline
+              controls={false}
               className="w-full h-full object-cover"
+              onLoadedMetadata={(e) => {
+                console.log('Remote video metadata loaded, dimensions:', e.target.videoWidth, 'x', e.target.videoHeight);
+                e.target.play().catch(err => console.error('Play after metadata:', err));
+              }}
+              onCanPlay={(e) => {
+                console.log('Remote video can play');
+                e.target.play().catch(err => console.error('Play on canplay:', err));
+              }}
             />
             <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-1 rounded">
               Other Participant
