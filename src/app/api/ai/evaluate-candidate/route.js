@@ -66,7 +66,7 @@ Be objective and thorough in your evaluation.`,
 
       result = JSON.parse(completion.choices[0].message.content);
     } else if (HAS_GEMINI) {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const prompt = `You are an expert recruiter evaluating candidates. Analyze the candidate's resume against the job requirements and provide a comprehensive evaluation in JSON format:
 {
   "overallScore": number (0-100),

@@ -63,7 +63,7 @@ export async function POST(request) {
 
       result = JSON.parse(completion.choices[0].message.content);
     } else if (HAS_GEMINI) {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const prompt = `You are an ATS (Applicant Tracking System) optimization expert. Compare the resume with the job description and return a JSON response with:
 {
   "atsScore": number (0-100),

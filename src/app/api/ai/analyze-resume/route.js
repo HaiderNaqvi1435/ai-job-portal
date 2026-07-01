@@ -67,7 +67,7 @@ Provide detailed, actionable feedback.`,
 
       analysis = JSON.parse(completion.choices[0].message.content);
     } else if (HAS_GEMINI) {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const prompt = `You are an expert resume analyzer. Analyze the provided resume and return a JSON response with the following structure:
 {
   "score": number (0-100),

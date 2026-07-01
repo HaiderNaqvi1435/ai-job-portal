@@ -75,7 +75,7 @@ Skills: ${Array.isArray(skills) ? skills.join(', ') : skills}`,
 
       result = JSON.parse(completion.choices[0].message.content);
     } else if (HAS_GEMINI) {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const prompt = `You are a salary data analyst. Provide salary insights in JSON format:
 {
   "salaryRange": {

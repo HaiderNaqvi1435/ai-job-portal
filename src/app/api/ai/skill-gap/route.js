@@ -69,7 +69,7 @@ export async function POST(request) {
 
       result = JSON.parse(completion.choices[0].message.content);
     } else if (HAS_GEMINI) {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const prompt = `You are a career development expert specializing in skill gap analysis. Analyze the candidate's resume against the job requirements and return a JSON response with:
 {
   "fitScore": number (0-100),

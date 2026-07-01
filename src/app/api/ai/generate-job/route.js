@@ -74,7 +74,7 @@ Employment Type: ${employmentType}`,
 
       result = JSON.parse(completion.choices[0].message.content);
     } else if (HAS_GEMINI) {
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const prompt = `You are an expert HR professional and job description writer. Generate a comprehensive, professional job posting with the following structure in JSON format:
 {
   "title": string,
